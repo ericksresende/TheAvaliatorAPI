@@ -156,7 +156,7 @@ namespace TheAvaliatorAPI.Controllers
             {
 
                 string apiUrl = $"https://www.thehuxley.com/api/v1/submissions?problem={codigoProblema}&submissionDateLe={dataLimite}&user={codigoUsuario}";
-
+                Console.WriteLine(apiUrl);
                 var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
                 request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
