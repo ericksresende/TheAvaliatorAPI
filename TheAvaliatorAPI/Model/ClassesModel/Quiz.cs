@@ -18,19 +18,19 @@ namespace TheAvaliatorAPI.Model.Quiz
         public double Score { get; set; }
 
         [JsonProperty("startDate")]
-        public DateTime StartDate { get; set; }
+        public string StartDate { get; set; }
 
         [JsonProperty("endDate")]
-        public DateTime EndDate { get; set; }
+        public string EndDate { get; set; }
 
         [JsonProperty("serverTime")]
-        public DateTime ServerTime { get; set; }
+        public string ServerTime { get; set; }
 
         [JsonProperty("dateCreated")]
-        public DateTime DateCreated { get; set; }
+        public string DateCreated { get; set; }
 
         [JsonProperty("lastUpdated")]
-        public DateTime LastUpdated { get; set; }
+        public string LastUpdated { get; set; }
 
         [JsonProperty("group")]
         public Group Group { get; set; }

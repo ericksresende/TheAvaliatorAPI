@@ -29,9 +29,45 @@ namespace TheAvaliatorAPI.Controllers
         [HttpPost("avaliarsubmissoes")]
         public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa)
         {
-            Console.WriteLine(idTarefa);
+
+            return request.Alunos!.Count > 1 ? await _PostAvaliarVariasSubmissoes(request, idTurma, idTarefa) :
+                                              await _PostAvaliarUmaSubmissao(request, idTurma, idTarefa);
+
+        }
+
+        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa)
+        {
             try
-            {   
+            {
+                var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString());
+
+                if (!avaliacao.Any())
+                {
+                    List<AvaliacaoAlunos> response = await _RequisicaoApi(request); ;
+
+                    response.RemoveAt(0);
+
+                    response[0].IdTarefa = idTarefa;
+                    response[0].IdTurma = idTurma;
+
+                    _RepositorioAluno.AdicionarConjunto(response);
+
+                    return Ok(response);
+                }
+
+                return Ok(avaliacao);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred during avaliate");
+                return StatusCode(500, "An error occurred during avaliate");
+            }
+        }
+        private async Task<ActionResult> _PostAvaliarVariasSubmissoes(Problema request, int idTurma, int idTarefa)
+        {
+            try
+            {
                 List<AvaliacaoAlunos> response;
                 var avaliacoes = _RepositorioAluno.Obter(p => p.IdTarefa == idTarefa && p.IdTurma == idTurma);
 
@@ -56,6 +92,12 @@ namespace TheAvaliatorAPI.Controllers
 
                 if (SubmissoesParaAvaliar.IsNullOrEmpty())
                 {
+                    if (avaliacoes.Count() > request.Alunos!.Count)
+                    {
+                        List<AvaliacaoAlunos> SubmissoesAvaliadas = _SubimssoesDosAlunosCalculadas(request, avaliacoes.ToList());
+
+                        return Ok(SubmissoesAvaliadas);
+                    }
                     return Ok(avaliacoes);
                 }
 
@@ -71,7 +113,7 @@ namespace TheAvaliatorAPI.Controllers
 
                 response.RemoveAt(0);
                 _RepositorioAluno.AdicionarConjunto(response);
-                
+
                 avaliacoes.ToList().AddRange(response);
 
                 return Ok(avaliacoes);
@@ -83,6 +125,7 @@ namespace TheAvaliatorAPI.Controllers
                 return StatusCode(500, "An error occurred during avaliate");
             }
         }
+
         private async Task<List<AvaliacaoAlunos>> _RequisicaoApi(Problema request)
         {
             string apiUrl = "https://avaliador.guugascode.site/avaliarsubmissoes";
@@ -116,7 +159,7 @@ namespace TheAvaliatorAPI.Controllers
             foreach (Exercicio aluno in requisicao.Alunos!)
             {
                 if (avaliacoes.Find(avaliacao => avaliacao.Solution == aluno.Id.ToString()) == null)
-                {   
+                {
                     Console.WriteLine("Não encontrou");
                     SubmissoesParaAvaliar.Add(aluno);
                 }
@@ -124,5 +167,21 @@ namespace TheAvaliatorAPI.Controllers
 
             return SubmissoesParaAvaliar;
         }
+
+        private List<AvaliacaoAlunos> _SubimssoesDosAlunosCalculadas(Problema requisicao, List<AvaliacaoAlunos> avaliacoes)
+        {
+            List<AvaliacaoAlunos> SubmissoesAvaliadas = new();
+
+            foreach (AvaliacaoAlunos aluno in avaliacoes!)
+            {
+                if (requisicao.Alunos!.Find((item) => item.Id.ToString() == aluno.Solution) != null)
+                {
+                    SubmissoesAvaliadas.Add(aluno);
+                }
+            }
+
+            return SubmissoesAvaliadas;
+        }
     }
+
 }
