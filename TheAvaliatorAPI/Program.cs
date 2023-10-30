@@ -34,7 +34,7 @@ builder.Services.AddHttpClient();
 var strBuilder = new NpgsqlConnectionStringBuilder()
 {
     Port = 5432,
-    Host = "100.68.5.76",
+    Host = "100.68.8.230",
     Username = "postgres",
     Password = "3141516",
     Database = "postgres"
