@@ -34,9 +34,9 @@ builder.Services.AddHttpClient();
 var strBuilder = new NpgsqlConnectionStringBuilder()
 {
     Port = 5432,
-    Host = "100.68.8.230",
+    Host = "database-1.cxsh7rv92eff.us-east-1.rds.amazonaws.com",
     Username = "postgres",
-    Password = "3141516",
+    Password = "bancotheavaliator",
     Database = "postgres"
 };
 
