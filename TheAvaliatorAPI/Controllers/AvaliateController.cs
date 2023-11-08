@@ -17,11 +17,13 @@ namespace TheAvaliatorAPI.Controllers
         private readonly HttpClient _httpClient;
 
         private readonly IRepositorio<AvaliacaoAlunos> _RepositorioAluno;
-        public AvaliateController(ILogger<ProblemController> logger, HttpClient httpClient, IRepositorio<AvaliacaoAlunos> RepositorioAluno)
+        private readonly IRepositorio<AvaliacaoProfessor> _RepositorioProfessor;
+        public AvaliateController(ILogger<ProblemController> logger, HttpClient httpClient, IRepositorio<AvaliacaoAlunos> RepositorioAluno, IRepositorio<AvaliacaoProfessor> RepositorioProfessor)
         {
             _logger = logger;
             _httpClient = httpClient;
             _RepositorioAluno = RepositorioAluno;
+            _RepositorioProfessor = RepositorioProfessor;
         }
 
 
@@ -38,12 +40,33 @@ namespace TheAvaliatorAPI.Controllers
         private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa)
         {
             try
-            {
+            {   
+                
+                var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString());
                 var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString());
 
                 if (!avaliacao.Any())
                 {
-                    List<AvaliacaoAlunos> response = await _RequisicaoApi(request); ;
+                    List<AvaliacaoAlunos> response = await _RequisicaoApi(request);
+
+                    AvaliacaoProfessor avaliacaoprofessor = new AvaliacaoProfessor
+                    {
+                        Problem = response[0].Problem,
+                        Solution = response[0].Solution,
+                        IsTeacher = response[0].IsTeacher,
+                        CyclomaticComplexity = response[0].CyclomaticComplexity,
+                        ExceededLimitCC = response[0].ExceededLimitCC,
+                        LinesOfCode = response[0].LinesOfCode,
+                        ExceededLimitLOC = response[0].ExceededLimitLOC,
+                        LogicalLinesOfCode = response[0].LogicalLinesOfCode,
+                        ExceededLimitLLOC = response[0].ExceededLimitLLOC,
+                        SourceLinesOfCode = response[0].SourceLinesOfCode,
+                        LimitSLOC = response[0].LimitSLOC,
+                        FinalScore = response[0].FinalScore
+                    };
+
+                    if (!avaliacaoProfessor.Any())
+                        _RepositorioProfessor.Adicionar(avaliacaoprofessor);
 
                     response.RemoveAt(0);
 
@@ -52,10 +75,16 @@ namespace TheAvaliatorAPI.Controllers
 
                     _RepositorioAluno.AdicionarConjunto(response);
 
-                    return Ok(response);
-                }
+                    var respostaCombinada1 = new List<object> { response[0], avaliacaoprofessor };
 
-                return Ok(avaliacao);
+                    return Ok(respostaCombinada1);
+                }
+                
+                List<AvaliacaoProfessor> responseProfessor = avaliacaoProfessor.ToList();
+                List<AvaliacaoAlunos> responseAlnuo = avaliacao.ToList();
+                var respostaCombinada = new List<object> { responseAlnuo[0], responseProfessor[0]};
+
+                return Ok(respostaCombinada);
 
             }
             catch (Exception ex)
@@ -64,6 +93,7 @@ namespace TheAvaliatorAPI.Controllers
                 return StatusCode(500, "An error occurred during avaliate");
             }
         }
+
         private async Task<ActionResult> _PostAvaliarVariasSubmissoes(Problema request, int idTurma, int idTarefa)
         {
             try
@@ -80,6 +110,8 @@ namespace TheAvaliatorAPI.Controllers
                         avaliacao.IdTarefa = idTarefa;
                         avaliacao.IdTurma = idTurma;
                     }
+
+
 
                     response.RemoveAt(0);
                     _RepositorioAluno.AdicionarConjunto(response);
