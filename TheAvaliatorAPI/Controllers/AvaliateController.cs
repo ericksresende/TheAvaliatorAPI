@@ -29,21 +29,21 @@ namespace TheAvaliatorAPI.Controllers
 
 
         [HttpPost("avaliarsubmissoes")]
-        public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa)
+        public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa,int idProfessor)
         {
 
             return request.Alunos!.Count > 1 ? await _PostAvaliarVariasSubmissoes(request, idTurma, idTarefa) :
-                                              await _PostAvaliarUmaSubmissao(request, idTurma, idTarefa);
+                                              await _PostAvaliarUmaSubmissao(request, idTurma, idTarefa,idProfessor);
 
         }
 
-        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa)
+        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa,int idProfessor)
         {
             try
             {   
                 
                 var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString());
-                var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString());
+                var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString() && p.idProfessor == idProfessor );
 
                 if (!avaliacao.Any())
                 {
@@ -72,6 +72,8 @@ namespace TheAvaliatorAPI.Controllers
 
                     response[0].IdTarefa = idTarefa;
                     response[0].IdTurma = idTurma;
+                    response[0].idProfessor = idProfessor;
+                    
 
                     _RepositorioAluno.AdicionarConjunto(response);
 
