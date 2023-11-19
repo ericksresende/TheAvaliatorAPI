@@ -162,7 +162,7 @@ namespace TheAvaliatorAPI.Controllers
 
         private async Task<List<AvaliacaoAlunos>> _RequisicaoApi(Problema request)
         {
-            string apiUrl = "https://avaliador.guugascode.site/avaliarsubmissoes";
+            string apiUrl = "https://apiavaliadoratheavaliator-62f424805023.herokuapp.com/avaliarsubmissoes";
 
 
             var jsonContent = new StringContent(JsonConvert.SerializeObject(request),
