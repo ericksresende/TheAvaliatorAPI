@@ -42,7 +42,7 @@ namespace TheAvaliatorAPI.Controllers
             try
             {   
                 
-                var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString());
+                var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString() && p.IdProfessor == idProfessor);
                 var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString() && p.idProfessor == idProfessor );
 
                 if (!avaliacao.Any())
@@ -50,7 +50,8 @@ namespace TheAvaliatorAPI.Controllers
                     List<AvaliacaoAlunos> response = await _RequisicaoApi(request);
 
                     AvaliacaoProfessor avaliacaoprofessor = new AvaliacaoProfessor
-                    {
+                    {   
+                        IdProfessor = idProfessor,
                         Problem = response[0].Problem,
                         Solution = response[0].Solution,
                         IsTeacher = response[0].IsTeacher,
@@ -162,7 +163,7 @@ namespace TheAvaliatorAPI.Controllers
 
         private async Task<List<AvaliacaoAlunos>> _RequisicaoApi(Problema request)
         {
-            string apiUrl = "https://avaliador.guugascode.site/avaliarsubmissoes";
+            string apiUrl = "https://apiavaliadoratheavaliator-62f424805023.herokuapp.com/avaliarsubmissoes";
 
 
             var jsonContent = new StringContent(JsonConvert.SerializeObject(request),

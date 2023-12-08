@@ -8,6 +8,9 @@ namespace TheAvaliatorAPI.Model
 
 
         public int Id { get; set; }
+        public int IdProfessor { get; set; }
+        public int IdProblema { get; set; }
+
         [JsonProperty("PROBLEM")]
         public string Problem { get; set; }
 
@@ -44,9 +47,5 @@ namespace TheAvaliatorAPI.Model
         [JsonProperty("FINAL_SCORE")]
         public string FinalScore { get; set; }
 
-        public static explicit operator AvaliacaoProfessor(AvaliacaoAlunos v)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
