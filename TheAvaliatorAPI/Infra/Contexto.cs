@@ -21,7 +21,8 @@ namespace TheAvaliatorAPI.Infra
                 entity.ToTable("avalicaoalunos");
 
                 entity.HasKey(e => e.IdAvaliacao);
-                entity.Property(e => e.idProfessor).HasColumnName("Id_professor");
+
+
                 entity.Property(e => e.IdTurma).HasColumnName("Id_Turma");
                 entity.Property(e => e.IdTarefa).HasColumnName("Id_Tarefa");
                 entity.Property(e => e.Problem).HasColumnName("PROBLEM");

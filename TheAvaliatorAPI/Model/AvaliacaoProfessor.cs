@@ -43,5 +43,10 @@ namespace TheAvaliatorAPI.Model
 
         [JsonProperty("FINAL_SCORE")]
         public string FinalScore { get; set; }
+
+        public static explicit operator AvaliacaoProfessor(AvaliacaoAlunos v)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
