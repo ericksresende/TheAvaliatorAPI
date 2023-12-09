@@ -27,29 +27,61 @@ namespace TheAvaliatorAPI.Controllers
 
 
         [HttpPost("avaliarsubmissoes")]
-        public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa, string IdSubimissaoProf)
+        public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa, string IdSubmissaoProf)
         {
 
             return request.Alunos!.Count > 1 ? await _PostAvaliarVariasSubmissoes(request, idTurma, idTarefa) :
-                                              await _PostAvaliarUmaSubmissao(request, idTurma, idTarefa, IdSubimissaoProf);
+                                              await _PostAvaliarUmaSubmissao(request, idTurma, idTarefa, IdSubmissaoProf);
 
         }
 
-        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa, string IdSubimissaoProf)
+        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa, string IdSubmissaoProf)
         {
-           try
-            {   
-                
-                var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString());
-                var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString() && p.IdSubimissaoProf == IdSubimissaoProf );
+            try
+            {
+
+                var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString() && p.IdSubmissaoProf == IdSubmissaoProf)
+                                                    .Join(
+                                                        _RepositorioProfessor.ObterTodos(),
+                                                        aluno => aluno.IdSubmissaoProf,
+                                                        professor => professor.IdSubmissaoProf,
+                                                        (aluno, professor) => new
+                                                        {
+                                                            Aluno = aluno,
+                                                            Professor = professor
+                                                        });
 
                 if (!avaliacao.Any())
                 {
+
                     List<AvaliacaoAlunos> response = await _RequisicaoApi(request);
 
                     AvaliacaoProfessor avaliacaoprofessor = new AvaliacaoProfessor
-                    {   
-                        IdSubimissaoProf = IdSubimissaoProf,
+                    {
+                        IdSubmissaoProf = IdSubmissaoProf,
+                        Problem = response[1].Problem,
+                        Solution = response[1].Solution,
+                        IsTeacher = response[1].IsTeacher,
+                        CyclomaticComplexity = response[1].CyclomaticComplexity,
+                        ExceededLimitCC = response[1].ExceededLimitCC,
+                        LinesOfCode = response[1].LinesOfCode,
+                        ExceededLimitLOC = response[1].ExceededLimitLOC,
+                        LogicalLinesOfCode = response[1].LogicalLinesOfCode,
+                        ExceededLimitLLOC = response[1].ExceededLimitLLOC,
+                        SourceLinesOfCode = response[1].SourceLinesOfCode,
+                        LimitSLOC = response[1].LimitSLOC,
+                        FinalScore = response[1].FinalScore,
+                    };
+                    var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString());
+
+                    if (!avaliacaoProfessor.Any())
+                        _RepositorioProfessor.Adicionar(avaliacaoprofessor);
+
+                    AvaliacaoAlunos avaliacaoAluno = new AvaliacaoAlunos
+                    {
+                        IdTurma = idTurma,
+                        IdTarefa = idTarefa,
+                        IdSubmissaoProf = IdSubmissaoProf,
                         Problem = response[0].Problem,
                         Solution = response[0].Solution,
                         IsTeacher = response[0].IsTeacher,
@@ -61,31 +93,25 @@ namespace TheAvaliatorAPI.Controllers
                         ExceededLimitLLOC = response[0].ExceededLimitLLOC,
                         SourceLinesOfCode = response[0].SourceLinesOfCode,
                         LimitSLOC = response[0].LimitSLOC,
-                        FinalScore = response[0].FinalScore
+                        FinalScore = response[0].FinalScore,
                     };
 
-                    if (!avaliacaoProfessor.Any())
-                        _RepositorioProfessor.Adicionar(avaliacaoprofessor);
 
-                    response.RemoveAt(0);
+                    _RepositorioAluno.Adicionar(avaliacaoAluno);
 
-                    response[0].IdTarefa = idTarefa;
-                    response[0].IdTurma = idTurma;
-                    response[0].IdSubimissaoProf = IdSubimissaoProf;
-                    
 
-                    _RepositorioAluno.AdicionarConjunto(response);
 
-                    var respostaCombinada1 = new List<object> { response[0], avaliacaoprofessor };
-
-                    return Ok(respostaCombinada1);
+                    return Ok(response);
                 }
-                
-                List<AvaliacaoProfessor> responseProfessor = avaliacaoProfessor.ToList();
-                List<AvaliacaoAlunos> responseAlnuo = avaliacao.ToList();
-                var respostaCombinada = new List<object> { responseAlnuo[0], responseProfessor[0]};
 
-                return Ok(respostaCombinada);
+                var responseHttp = avaliacao.ToList();
+
+                responseHttp[0].Aluno.avaliacaoProfessor.AvaliacaoAlunos = null;
+                AvaliacaoProfessor professor = responseHttp[0].Aluno.avaliacaoProfessor!;
+                responseHttp[0].Aluno.avaliacaoProfessor = null;
+                AvaliacaoAlunos aluno = responseHttp[0].Aluno;
+
+                return Ok(new List<object> { aluno, professor });
 
             }
             catch (Exception ex)
@@ -181,7 +207,7 @@ namespace TheAvaliatorAPI.Controllers
             }
             else
             {
-                throw new Exception("Recurso não encontrado."+ response);
+                throw new Exception("Recurso não encontrado." + response);
             }
         }
 
