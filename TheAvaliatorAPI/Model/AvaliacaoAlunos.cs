@@ -46,5 +46,7 @@ namespace TheAvaliatorAPI.Model
 
         [JsonProperty("FINAL_SCORE")]
         public string FinalScore { get; set; }
+
+        public AvaliacaoProfessor? AvaliacaoProfessor { get; set; } 
     }
 }

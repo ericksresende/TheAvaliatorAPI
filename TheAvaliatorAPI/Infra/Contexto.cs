@@ -21,7 +21,7 @@ namespace TheAvaliatorAPI.Infra
                 entity.ToTable("avalicaoalunos");
 
                 entity.HasKey(e => e.IdAvaliacao);
-                entity.Property(e => e.idProfessor).HasColumnName("Id_professor");
+                entity.Property(e => e.idProfessor).HasColumnName("idprofessor");
                 entity.Property(e => e.IdTurma).HasColumnName("Id_Turma");
                 entity.Property(e => e.IdTarefa).HasColumnName("Id_Tarefa");
                 entity.Property(e => e.Problem).HasColumnName("PROBLEM");
@@ -37,6 +37,12 @@ namespace TheAvaliatorAPI.Infra
                 entity.Property(e => e.LimitSLOC).HasColumnName("LIMIT_SLOC");
                 entity.Property(e => e.FinalScore).HasColumnName("FINAL_SCORE");
 
+                entity.HasOne(e => e.AvaliacaoProfessor)
+                .WithMany(p => p.AvaliacaoAlunos)                  
+                .HasForeignKey(e => e.idProfessor)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
             });
 
             modelBuilder.Entity<AvaliacaoProfessor>(entity =>
@@ -45,7 +51,6 @@ namespace TheAvaliatorAPI.Infra
 
                entity.HasKey(e => e.Id);
                entity.Property(e => e.IdProfessor).HasColumnName("idprofessor");
-               entity.Property(e => e.IdProblema).HasColumnName("idproblema");
                entity.Property(e => e.Problem).HasColumnName("PROBLEM");
                entity.Property(e => e.Solution).HasColumnName("SOLUTION");
                entity.Property(e => e.IsTeacher).HasColumnName("IS_TEACHER");
