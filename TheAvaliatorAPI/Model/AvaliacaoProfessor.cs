@@ -7,7 +7,7 @@ namespace TheAvaliatorAPI.Model
     {
 
 
-        public string IdProfessor { get; set; }
+        public string IdSubimissaoProf { get; set; }
 
         [JsonProperty("PROBLEM")]
         public string Problem { get; set; }
@@ -45,7 +45,6 @@ namespace TheAvaliatorAPI.Model
         [JsonProperty("FINAL_SCORE")]
         public string FinalScore { get; set; }
 
-        public ICollection<AvaliacaoAlunos> AvaliacaoAlunos { get; set; }
 
     }
 }

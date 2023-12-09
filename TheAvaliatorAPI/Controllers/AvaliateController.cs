@@ -27,64 +27,29 @@ namespace TheAvaliatorAPI.Controllers
 
 
         [HttpPost("avaliarsubmissoes")]
-        public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa, string idProfessor)
+        public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa, string IdSubimissaoProf)
         {
 
             return request.Alunos!.Count > 1 ? await _PostAvaliarVariasSubmissoes(request, idTurma, idTarefa) :
-                                              await _PostAvaliarUmaSubmissao(request, idTurma, idTarefa, idProfessor);
+                                              await _PostAvaliarUmaSubmissao(request, idTurma, idTarefa, IdSubimissaoProf);
 
         }
 
-        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa, string idProfessor)
+        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa, string IdSubimissaoProf)
         {
-            try
-            {
+           try
+            {   
+                
+                var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString());
+                var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString() && p.IdSubimissaoProf == IdSubimissaoProf );
 
-                var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString() && p.idProfessor == idProfessor)
-                                                    .Join(
-                                                        _RepositorioProfessor.ObterTodos(),
-                                                        aluno => aluno.idProfessor,
-                                                        professor => professor.IdProfessor,
-                                                        (aluno, professor) => new
-                                                        {
-                                                            Aluno = aluno,
-                                                            Professor = professor
-                                                        });
-
-                Console.WriteLine(idProfessor);
                 if (!avaliacao.Any())
                 {
                     List<AvaliacaoAlunos> response = await _RequisicaoApi(request);
 
                     AvaliacaoProfessor avaliacaoprofessor = new AvaliacaoProfessor
-                    {
-                        IdProfessor = idProfessor,
-                        Problem = response[1].Problem,
-                        Solution = response[1].Solution,
-                        IsTeacher = response[1].IsTeacher,
-                        CyclomaticComplexity = response[1].CyclomaticComplexity,
-                        ExceededLimitCC = response[1].ExceededLimitCC,
-                        LinesOfCode = response[1].LinesOfCode,
-                        ExceededLimitLOC = response[1].ExceededLimitLOC,
-                        LogicalLinesOfCode = response[1].LogicalLinesOfCode,
-                        ExceededLimitLLOC = response[1].ExceededLimitLLOC,
-                        SourceLinesOfCode = response[1].SourceLinesOfCode,
-                        LimitSLOC = response[1].LimitSLOC,
-                        FinalScore = response[1].FinalScore
-                    };
-
-                    Console.WriteLine(avaliacaoprofessor.IdProfessor);
-                    var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.IdProfessor == idProfessor);
-
-                    if (!avaliacaoProfessor.Any())
-                        _RepositorioProfessor.Adicionar(avaliacaoprofessor);
-
-
-                    AvaliacaoAlunos avaliacaoAluno = new AvaliacaoAlunos
-                    {
-                        IdTurma = idTurma,
-                        IdTarefa = idTarefa,
-                        idProfessor = idProfessor,
+                    {   
+                        IdSubimissaoProf = IdSubimissaoProf,
                         Problem = response[0].Problem,
                         Solution = response[0].Solution,
                         IsTeacher = response[0].IsTeacher,
@@ -99,20 +64,28 @@ namespace TheAvaliatorAPI.Controllers
                         FinalScore = response[0].FinalScore
                     };
 
+                    if (!avaliacaoProfessor.Any())
+                        _RepositorioProfessor.Adicionar(avaliacaoprofessor);
 
-                    _RepositorioAluno.Adicionar(avaliacaoAluno);
+                    response.RemoveAt(0);
 
-                    return Ok(response);
+                    response[0].IdTarefa = idTarefa;
+                    response[0].IdTurma = idTurma;
+                    response[0].IdSubimissaoProf = IdSubimissaoProf;
+                    
+
+                    _RepositorioAluno.AdicionarConjunto(response);
+
+                    var respostaCombinada1 = new List<object> { response[0], avaliacaoprofessor };
+
+                    return Ok(respostaCombinada1);
                 }
-
-                var responseHttp = avaliacao.ToList(); 
                 
-                responseHttp[0].Aluno.AvaliacaoProfessor.AvaliacaoAlunos = null;
-                AvaliacaoProfessor professor = responseHttp[0].Aluno.AvaliacaoProfessor!;
-                responseHttp[0].Aluno.AvaliacaoProfessor = null;
-                AvaliacaoAlunos aluno = responseHttp[0].Aluno;
+                List<AvaliacaoProfessor> responseProfessor = avaliacaoProfessor.ToList();
+                List<AvaliacaoAlunos> responseAlnuo = avaliacao.ToList();
+                var respostaCombinada = new List<object> { responseAlnuo[0], responseProfessor[0]};
 
-                return Ok(new List<object> { aluno, professor});
+                return Ok(respostaCombinada);
 
             }
             catch (Exception ex)
@@ -208,7 +181,7 @@ namespace TheAvaliatorAPI.Controllers
             }
             else
             {
-                throw new Exception("Recurso não encontrado.");
+                throw new Exception("Recurso não encontrado."+ response);
             }
         }
 
