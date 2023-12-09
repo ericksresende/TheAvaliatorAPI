@@ -27,7 +27,7 @@ namespace TheAvaliatorAPI.Controllers
 
 
         [HttpPost("avaliarsubmissoes")]
-        public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa, int idProfessor)
+        public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa, string idProfessor)
         {
 
             return request.Alunos!.Count > 1 ? await _PostAvaliarVariasSubmissoes(request, idTurma, idTarefa) :
@@ -35,7 +35,7 @@ namespace TheAvaliatorAPI.Controllers
 
         }
 
-        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa, int idProfessor)
+        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa, string idProfessor)
         {
             try
             {
@@ -44,13 +44,14 @@ namespace TheAvaliatorAPI.Controllers
                                                     .Join(
                                                         _RepositorioProfessor.ObterTodos(),
                                                         aluno => aluno.idProfessor,
-                                                        professor => professor.Id,
+                                                        professor => professor.IdProfessor,
                                                         (aluno, professor) => new
                                                         {
                                                             Aluno = aluno,
                                                             Professor = professor
                                                         });
 
+                Console.WriteLine(idProfessor);
                 if (!avaliacao.Any())
                 {
                     List<AvaliacaoAlunos> response = await _RequisicaoApi(request);
@@ -72,6 +73,7 @@ namespace TheAvaliatorAPI.Controllers
                         FinalScore = response[1].FinalScore
                     };
 
+                    Console.WriteLine(avaliacaoprofessor.IdProfessor);
                     var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString() && p.IdProfessor == idProfessor);
 
                     if (!avaliacaoProfessor.Any())

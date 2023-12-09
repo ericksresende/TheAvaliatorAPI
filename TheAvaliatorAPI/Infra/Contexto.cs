@@ -49,8 +49,7 @@ namespace TheAvaliatorAPI.Infra
            {
                entity.ToTable("avalicaoprofessor");
 
-               entity.HasKey(e => e.Id);
-               entity.Property(e => e.IdProfessor).HasColumnName("idprofessor");
+               entity.HasKey(e => e.IdProfessor);
                entity.Property(e => e.Problem).HasColumnName("PROBLEM");
                entity.Property(e => e.Solution).HasColumnName("SOLUTION");
                entity.Property(e => e.IsTeacher).HasColumnName("IS_TEACHER");

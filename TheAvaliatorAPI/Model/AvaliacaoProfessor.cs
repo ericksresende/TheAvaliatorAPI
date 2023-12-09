@@ -7,8 +7,7 @@ namespace TheAvaliatorAPI.Model
     {
 
 
-        public int Id { get; set; }
-        public int IdProfessor { get; set; }
+        public string IdProfessor { get; set; }
 
         [JsonProperty("PROBLEM")]
         public string Problem { get; set; }

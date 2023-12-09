@@ -7,7 +7,7 @@ namespace TheAvaliatorAPI.Model
     {
 
         public int IdAvaliacao { get; set; }
-        public int idProfessor { get; set; }
+        public string idProfessor { get; set; }
         public int IdTurma { get; set; }
         public int IdTarefa { get; set; }
 
