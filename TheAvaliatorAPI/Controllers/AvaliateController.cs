@@ -74,7 +74,7 @@ namespace TheAvaliatorAPI.Controllers
                     };
 
                     Console.WriteLine(avaliacaoprofessor.IdProfessor);
-                    var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString() && p.IdProfessor == idProfessor);
+                    var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.IdProfessor == idProfessor);
 
                     if (!avaliacaoProfessor.Any())
                         _RepositorioProfessor.Adicionar(avaliacaoprofessor);
