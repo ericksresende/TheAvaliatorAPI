@@ -1,9 +1,7 @@
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System.Text;
-using TheAvaliatorAPI.Infra;
 using TheAvaliatorAPI.Model;
 using TheAvaliatorAPI.Model.Interface;
 
@@ -29,29 +27,62 @@ namespace TheAvaliatorAPI.Controllers
 
 
         [HttpPost("avaliarsubmissoes")]
-        public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa,int idProfessor)
+        public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa, int idProfessor)
         {
 
             return request.Alunos!.Count > 1 ? await _PostAvaliarVariasSubmissoes(request, idTurma, idTarefa) :
-                                              await _PostAvaliarUmaSubmissao(request, idTurma, idTarefa,idProfessor);
+                                              await _PostAvaliarUmaSubmissao(request, idTurma, idTarefa, idProfessor);
 
         }
 
-        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa,int idProfessor)
+        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa, int idProfessor)
         {
             try
-            {   
-                
-                var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString() && p.IdProfessor == idProfessor);
-                var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString() && p.idProfessor == idProfessor );
+            {
+
+                var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString() && p.idProfessor == idProfessor)
+                                                    .Join(
+                                                        _RepositorioProfessor.ObterTodos(),
+                                                        aluno => aluno.idProfessor,
+                                                        professor => professor.Id,
+                                                        (aluno, professor) => new
+                                                        {
+                                                            Aluno = aluno,
+                                                            Professor = professor
+                                                        });
 
                 if (!avaliacao.Any())
                 {
                     List<AvaliacaoAlunos> response = await _RequisicaoApi(request);
 
                     AvaliacaoProfessor avaliacaoprofessor = new AvaliacaoProfessor
-                    {   
+                    {
                         IdProfessor = idProfessor,
+                        Problem = response[1].Problem,
+                        Solution = response[1].Solution,
+                        IsTeacher = response[1].IsTeacher,
+                        CyclomaticComplexity = response[1].CyclomaticComplexity,
+                        ExceededLimitCC = response[1].ExceededLimitCC,
+                        LinesOfCode = response[1].LinesOfCode,
+                        ExceededLimitLOC = response[1].ExceededLimitLOC,
+                        LogicalLinesOfCode = response[1].LogicalLinesOfCode,
+                        ExceededLimitLLOC = response[1].ExceededLimitLLOC,
+                        SourceLinesOfCode = response[1].SourceLinesOfCode,
+                        LimitSLOC = response[1].LimitSLOC,
+                        FinalScore = response[1].FinalScore
+                    };
+
+                    var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString() && p.IdProfessor == idProfessor);
+
+                    if (!avaliacaoProfessor.Any())
+                        _RepositorioProfessor.Adicionar(avaliacaoprofessor);
+
+
+                    AvaliacaoAlunos avaliacaoAluno = new AvaliacaoAlunos
+                    {
+                        IdTurma = idTurma,
+                        IdTarefa = idTarefa,
+                        idProfessor = idProfessor,
                         Problem = response[0].Problem,
                         Solution = response[0].Solution,
                         IsTeacher = response[0].IsTeacher,
@@ -66,28 +97,20 @@ namespace TheAvaliatorAPI.Controllers
                         FinalScore = response[0].FinalScore
                     };
 
-                    if (!avaliacaoProfessor.Any())
-                        _RepositorioProfessor.Adicionar(avaliacaoprofessor);
 
-                    response.RemoveAt(0);
+                    _RepositorioAluno.Adicionar(avaliacaoAluno);
 
-                    response[0].IdTarefa = idTarefa;
-                    response[0].IdTurma = idTurma;
-                    response[0].idProfessor = idProfessor;
-                    
-
-                    _RepositorioAluno.AdicionarConjunto(response);
-
-                    var respostaCombinada1 = new List<object> { response[0], avaliacaoprofessor };
-
-                    return Ok(respostaCombinada1);
+                    return Ok(response);
                 }
-                
-                List<AvaliacaoProfessor> responseProfessor = avaliacaoProfessor.ToList();
-                List<AvaliacaoAlunos> responseAlnuo = avaliacao.ToList();
-                var respostaCombinada = new List<object> { responseAlnuo[0], responseProfessor[0]};
 
-                return Ok(respostaCombinada);
+                var responseHttp = avaliacao.ToList(); 
+                
+                responseHttp[0].Aluno.AvaliacaoProfessor.AvaliacaoAlunos = null;
+                AvaliacaoProfessor professor = responseHttp[0].Aluno.AvaliacaoProfessor!;
+                responseHttp[0].Aluno.AvaliacaoProfessor = null;
+                AvaliacaoAlunos aluno = responseHttp[0].Aluno;
+
+                return Ok(new List<object> { aluno, professor});
 
             }
             catch (Exception ex)
