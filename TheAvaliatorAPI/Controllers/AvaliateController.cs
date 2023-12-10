@@ -53,7 +53,7 @@ namespace TheAvaliatorAPI.Controllers
 
                 if (!avaliacao.Any())
                 {
-
+                    
                     List<AvaliacaoAlunos> response = await _RequisicaoApi(request);
 
                     AvaliacaoProfessor avaliacaoprofessor = new AvaliacaoProfessor
@@ -72,10 +72,14 @@ namespace TheAvaliatorAPI.Controllers
                         LimitSLOC = response[1].LimitSLOC,
                         FinalScore = response[1].FinalScore,
                     };
-                    var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.Problem == request.Id.ToString());
+                    var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.IdSubmissaoProf == IdSubmissaoProf);
 
-                    if (!avaliacaoProfessor.Any())
+                    if (!avaliacaoProfessor.Any()){
+                        Console.WriteLine("--------------------------------------");
+                        Console.WriteLine(avaliacaoprofessor.IdSubmissaoProf);
+                        Console.WriteLine("--------------------------------------");
                         _RepositorioProfessor.Adicionar(avaliacaoprofessor);
+                    }
 
                     AvaliacaoAlunos avaliacaoAluno = new AvaliacaoAlunos
                     {
