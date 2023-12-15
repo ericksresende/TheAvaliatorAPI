@@ -24,7 +24,7 @@ namespace TheAvaliatorAPI.Controllers
         {
             try
             {
-                string apiUrl = "https://www.thehuxley.com/api/v1/user/groups?max=10&offset=0&order=desc&sort=lastUpdated";
+                string apiUrl = "https://www.thehuxley.com/api/v1/user/groups?max=99&offset=0&order=desc&sort=lastUpdated";
 
                 var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
                 request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

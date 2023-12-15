@@ -14,14 +14,14 @@ namespace TheAvaliatorAPI.Controllers
         private readonly ILogger<ProblemController> _logger;
         private readonly HttpClient _httpClient;
 
-        private readonly IRepositorio<AvaliacaoAlunos> _RepositorioAluno;
-        private readonly IRepositorio<AvaliacaoProfessor> _RepositorioProfessor;
-        public AvaliateController(ILogger<ProblemController> logger, HttpClient httpClient, IRepositorio<AvaliacaoAlunos> RepositorioAluno, IRepositorio<AvaliacaoProfessor> RepositorioProfessor)
+        private readonly IRepositorio<AvaliacaoAlunos> _repositorioAluno;
+        private readonly IRepositorio<AvaliacaoProfessor> _repositorioProfessor;
+        public AvaliateController(ILogger<ProblemController> logger, HttpClient httpClient, IRepositorio<AvaliacaoAlunos> repositorioAluno, IRepositorio<AvaliacaoProfessor> repositorioProfessor)
         {
             _logger = logger;
             _httpClient = httpClient;
-            _RepositorioAluno = RepositorioAluno;
-            _RepositorioProfessor = RepositorioProfessor;
+            _repositorioAluno = repositorioAluno;
+            _repositorioProfessor = repositorioProfessor;
         }
 
 
@@ -29,20 +29,17 @@ namespace TheAvaliatorAPI.Controllers
         [HttpPost("avaliarsubmissoes")]
         public async Task<ActionResult> PostAvaliarSubmissao([FromBody] Problema request, int idTurma, int idTarefa, string IdSubmissaoProf)
         {
-
-            return request.Alunos!.Count > 1 ? await _PostAvaliarVariasSubmissoes(request, idTurma, idTarefa) :
-                                              await _PostAvaliarUmaSubmissao(request, idTurma, idTarefa, IdSubmissaoProf);
-
+            return request.Alunos!.Count > 1 ? await PostAvaliarVariasSubmissoes(request, idTurma, idTarefa) :
+                                              await PostAvaliarUmaSubmissao(request, idTurma, idTarefa, IdSubmissaoProf);
         }
 
-        private async Task<ActionResult> _PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa, string IdSubmissaoProf)
+        private async Task<ActionResult> PostAvaliarUmaSubmissao(Problema request, int idTurma, int idTarefa, string IdSubmissaoProf)
         {
             try
             {
-
-                var avaliacao = _RepositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString() && p.IdSubmissaoProf == IdSubmissaoProf)
+                var avaliacao = _repositorioAluno.Obter(p => p.Solution == request.Alunos![0].Id.ToString() && p.IdSubmissaoProf == IdSubmissaoProf)
                                                     .Join(
-                                                        _RepositorioProfessor.ObterTodos(),
+                                                        _repositorioProfessor.ObterTodos(),
                                                         aluno => aluno.IdSubmissaoProf,
                                                         professor => professor.IdSubmissaoProf,
                                                         (aluno, professor) => new
@@ -53,8 +50,7 @@ namespace TheAvaliatorAPI.Controllers
 
                 if (!avaliacao.Any())
                 {
-                    
-                    List<AvaliacaoAlunos> response = await _RequisicaoApi(request);
+                    List<AvaliacaoAlunos> response = await RequisicaoApi(request);
 
                     AvaliacaoProfessor avaliacaoprofessor = new AvaliacaoProfessor
                     {
@@ -72,13 +68,13 @@ namespace TheAvaliatorAPI.Controllers
                         LimitSLOC = response[1].LimitSLOC,
                         FinalScore = response[1].FinalScore,
                     };
-                    var avaliacaoProfessor = _RepositorioProfessor.Obter(p => p.IdSubmissaoProf == IdSubmissaoProf);
+                    var avaliacaoProfessor = _repositorioProfessor.Obter(p => p.IdSubmissaoProf == IdSubmissaoProf);
 
                     if (!avaliacaoProfessor.Any()){
                         Console.WriteLine("--------------------------------------");
                         Console.WriteLine(avaliacaoprofessor.IdSubmissaoProf);
                         Console.WriteLine("--------------------------------------");
-                        _RepositorioProfessor.Adicionar(avaliacaoprofessor);
+                        _repositorioProfessor.Adicionar(avaliacaoprofessor);
                     }
 
                     AvaliacaoAlunos avaliacaoAluno = new AvaliacaoAlunos
@@ -99,11 +95,7 @@ namespace TheAvaliatorAPI.Controllers
                         LimitSLOC = response[0].LimitSLOC,
                         FinalScore = response[0].FinalScore,
                     };
-
-
-                    _RepositorioAluno.Adicionar(avaliacaoAluno);
-
-
+                    _repositorioAluno.Adicionar(avaliacaoAluno);
 
                     return Ok(response);
                 }
@@ -116,7 +108,6 @@ namespace TheAvaliatorAPI.Controllers
                 AvaliacaoAlunos aluno = responseHttp[0].Aluno;
 
                 return Ok(new List<object> { aluno, professor });
-
             }
             catch (Exception ex)
             {
@@ -125,16 +116,16 @@ namespace TheAvaliatorAPI.Controllers
             }
         }
 
-        private async Task<ActionResult> _PostAvaliarVariasSubmissoes(Problema request, int idTurma, int idTarefa)
+        private async Task<ActionResult> PostAvaliarVariasSubmissoes(Problema request, int idTurma, int idTarefa)
         {
             try
             {
                 List<AvaliacaoAlunos> response;
-                var avaliacoes = _RepositorioAluno.Obter(p => p.IdTarefa == idTarefa && p.IdTurma == idTurma);
+                var avaliacoes = _repositorioAluno.Obter(p => p.IdTarefa == idTarefa && p.IdTurma == idTurma);
 
                 if (!avaliacoes.Any())
                 {
-                    response = await _RequisicaoApi(request);
+                    response = await RequisicaoApi(request);
 
                     foreach (var avaliacao in response)
                     {
@@ -145,7 +136,7 @@ namespace TheAvaliatorAPI.Controllers
 
 
                     response.RemoveAt(0);
-                    _RepositorioAluno.AdicionarConjunto(response);
+                    _repositorioAluno.AdicionarConjunto(response);
 
                     return Ok(response);
                 }
@@ -166,7 +157,7 @@ namespace TheAvaliatorAPI.Controllers
 
                 request.Alunos = SubmissoesParaAvaliar;
 
-                response = await _RequisicaoApi(request);
+                response = await RequisicaoApi(request);
 
                 foreach (var avaliacao in response)
                 {
@@ -175,7 +166,7 @@ namespace TheAvaliatorAPI.Controllers
                 }
 
                 response.RemoveAt(0);
-                _RepositorioAluno.AdicionarConjunto(response);
+                _repositorioAluno.AdicionarConjunto(response);
 
                 avaliacoes.ToList().AddRange(response);
 
@@ -189,7 +180,7 @@ namespace TheAvaliatorAPI.Controllers
             }
         }
 
-        private async Task<List<AvaliacaoAlunos>> _RequisicaoApi(Problema request)
+        private async Task<List<AvaliacaoAlunos>> RequisicaoApi(Problema request)
         {
             string apiUrl = "https://apiavaliadoratheavaliator-62f424805023.herokuapp.com/avaliarsubmissoes";
 
